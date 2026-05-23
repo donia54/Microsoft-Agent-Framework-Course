@@ -1,18 +1,27 @@
-﻿using Microsoft.Agents.AI;
+﻿
+using Microsoft.Agents.AI;
 using Microsoft.Extensions.AI;
-using GenerativeAI.Microsoft;
+using OpenAI;
+using System.ClientModel;
 
-IChatClient client = 
-    new GenerativeAIChatClient(apiKey: "AIzaSyBESIweduXJzRBT8tk5If0nyf0TCw_Wpjo", "gemini-3.1-flash-lite");
+var openAiClient = new OpenAIClient(
+    new ApiKeyCredential("lm-studio"),
+    new OpenAIClientOptions
+    {
+        Endpoint = new Uri("http://localhost:1234/v1")
+    });
+
+IChatClient client = openAiClient
+    .GetChatClient("ibm/granite-4-micro")
+    .AsIChatClient();
 
 ChatClientAgent agent = new(client);
-
-
 
 while (true)
 {
     Console.Write("User: ");
     var userInput = Console.ReadLine();
+
     if (string.IsNullOrWhiteSpace(userInput))
         break;
 

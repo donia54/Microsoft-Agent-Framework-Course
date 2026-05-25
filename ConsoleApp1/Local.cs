@@ -2,6 +2,7 @@
 using Microsoft.Agents.AI;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Options;
+using ModelContextProtocol.Client;
 using OpenAI;
 using System.ClientModel;
 using System.ComponentModel;
@@ -42,21 +43,38 @@ public class Local
     // With agent
     static public async Task RunLocalWithAgentAsync(AiModel model, bool streaming = true)
     {
+
+        await using McpClient mcpClient = await McpClient.CreateAsync(new HttpClientTransport(new HttpClientTransportOptions
+        {
+            Endpoint = new Uri("https://learn.microsoft.com/api/mcp"),
+            TransportMode = HttpTransportMode.StreamableHttp
+        }));
+        IList<McpClientTool> mcpTools = await mcpClient.ListToolsAsync();
+
+
         OpenAIClient client = new OpenAIClient(new ApiKeyCredential(apiKey), new OpenAIClientOptions { Endpoint = new Uri(endpoint) });
 
         var chatClient = client.GetChatClient(ModelCatalog.ToModelName(model)).AsIChatClient();
+     
+        var allTools = getAllFunctions();                     
+        allTools.AddRange(mcpTools.Cast<AITool>());           
+
 
         var agentOptions = new ChatClientAgentOptions
         {
             ChatOptions = new ChatOptions
             {
-                ToolMode = ChatToolMode.RequireAny,
-                Tools = getAllFunctions()
+                ToolMode = ChatToolMode.Auto,
+                Tools = allTools,
+                Reasoning = new ReasoningOptions
+                {
+                    Effort = ReasoningEffort.ExtraHigh
+                }
             }
         };
 
         AIAgent agent = chatClient.AsAIAgent(agentOptions);
-
+        
         AgentSession session = await agent.CreateSessionAsync();
 
         Console.Write("User: ");
@@ -74,14 +92,16 @@ public class Local
         }
         else
         {
-            AgentResponse response = await agent.RunAsync(userInput, session);        
+            AgentResponse response = await agent.RunAsync(userInput, session);
+
+            Console.WriteLine(response.FinishReason);
+
             Console.WriteLine(response.Text);
         }        
     }
 
     static List<AITool> getAllFunctions()
     {
-
         var reverseWordTool = AIFunctionFactory.Create(GetWordReversed);
         var bestPlayerTool = AIFunctionFactory.Create(GetBestPlayer);
 

@@ -7,18 +7,17 @@ namespace ConsoleApp1;
 
 public class Local
 {
-    static public async Task RunLocalAsync(string model)
-    {
-        var openAiClient = new OpenAIClient(
-            new ApiKeyCredential("lm-studio"),
-            new OpenAIClientOptions
-            {
-                Endpoint = new Uri("http://localhost:1234/v1")
-            });
 
-        IChatClient client = openAiClient
-            .GetChatClient(model)
-            .AsIChatClient();
+    static string endpoint = "http://localhost:1234/v1";
+    static string apiKey = "lkm-studio";
+    static string UserDefaultMessage = "Name the countries in Mama Africa with its cities";
+
+
+    static public async Task RunLocalAsync(AiModel model)
+    {
+        var openAiClient = new OpenAIClient(new ApiKeyCredential(apiKey),new OpenAIClientOptions{Endpoint = new Uri(endpoint)});
+
+        IChatClient client = openAiClient.GetChatClient(ModelCatalog.ToModelName(model)).AsIChatClient();
 
         ChatClientAgent agent = new(client);
 
@@ -35,4 +34,31 @@ public class Local
             Console.WriteLine("Agent: " + response.Text);
         }
     }
-}
+
+    // With agent
+    static public async Task RunLocalWithAgentAsync(AiModel model, bool streaming = true)
+    {
+        OpenAIClient client = new OpenAIClient( new ApiKeyCredential(apiKey), new OpenAIClientOptions{Endpoint = new Uri(endpoint)});
+
+        var chatClient = client.GetChatClient(ModelCatalog.ToModelName(model)).AsIChatClient();
+        AIAgent agent = chatClient.AsAIAgent();
+
+        if(streaming)
+        {
+            Console.WriteLine("User: " + UserDefaultMessage);
+            Console.Write("Agent: ");
+
+            await foreach (var response in agent.RunStreamingAsync(UserDefaultMessage))
+            {
+                Console.Write(response.Text);
+            }
+            Console.WriteLine(); // for new line after streaming is done
+        }
+        else
+        {
+            AgentResponse response = await agent.RunAsync(UserDefaultMessage);
+            Console.WriteLine("User: " + UserDefaultMessage);
+            Console.WriteLine("Agent: " + response.Text);
+        }
+    }
+} 

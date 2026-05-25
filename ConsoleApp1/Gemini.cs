@@ -9,10 +9,10 @@ namespace ConsoleApp1;
 
 public class Gemini
 {
-    static public async Task RunGeminiModel()
+    static public async Task RunGeminiModel(AiModel model)
     {
         IChatClient client =
-    new GenerativeAIChatClient(apiKey: "AIzaSyBESIweduXJzRBT8tk5If0nyf0TCw_Wpjo", "gemini-3.1-flash-lite");
+    new GenerativeAIChatClient(apiKey: "AIzaSyBESIweduXJzRBT8tk5If0nyf0TCw_Wpjo", ModelCatalog.ToModelName(model));
 
         ChatClientAgent agent = new(client);
 

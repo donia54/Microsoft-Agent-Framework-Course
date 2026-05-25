@@ -10,7 +10,8 @@ public class Local
 
     static string endpoint = "http://localhost:1234/v1";
     static string apiKey = "lkm-studio";
-    static string UserDefaultMessage = "Name the countries in Mama Africa with its cities";
+    static string defaultUserMessage = "Name the countries in Mama Africa with its cities";
+    static string defaultSystemMessage = "You are a helpful assistant that helps users to find out the countries in Africa with its cities";
 
 
     static public async Task RunLocalAsync(AiModel model)
@@ -41,24 +42,36 @@ public class Local
         OpenAIClient client = new OpenAIClient( new ApiKeyCredential(apiKey), new OpenAIClientOptions{Endpoint = new Uri(endpoint)});
 
         var chatClient = client.GetChatClient(ModelCatalog.ToModelName(model)).AsIChatClient();
-        AIAgent agent = chatClient.AsAIAgent();
+        AIAgent agent = chatClient.AsAIAgent(instructions: "You are a Palestinian from Ramallah.");
 
-        if(streaming)
+        AgentSession session = await agent.CreateSessionAsync();
+
+
+
+        while (true)
         {
-            Console.WriteLine("User: " + UserDefaultMessage);
-            Console.Write("Agent: ");
+            Console.Write("User: ");
+            var userInput = Console.ReadLine();
 
-            await foreach (var response in agent.RunStreamingAsync(UserDefaultMessage))
+
+            ChatMessage systemMessgae = new ChatMessage(ChatRole.System, defaultSystemMessage);
+            ChatMessage userMessage = new ChatMessage(ChatRole.User, userInput);
+
+            if (streaming)
             {
-                Console.Write(response.Text);
+                Console.Write("Agent: ");
+
+                await foreach (var response in agent.RunStreamingAsync([systemMessgae, userMessage], session))
+                {
+                    Console.Write(response.Text);
+                }
+                Console.WriteLine(); // for new line after streaming is done
             }
-            Console.WriteLine(); // for new line after streaming is done
-        }
-        else
-        {
-            AgentResponse response = await agent.RunAsync(UserDefaultMessage);
-            Console.WriteLine("User: " + UserDefaultMessage);
-            Console.WriteLine("Agent: " + response.Text);
+            else
+            {
+                AgentResponse response = await agent.RunAsync(userMessage, session);
+                Console.WriteLine("Agent: " + response.Text);
+            }
         }
     }
 } 

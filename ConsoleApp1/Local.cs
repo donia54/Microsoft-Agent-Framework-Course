@@ -57,15 +57,15 @@ public class Local
         var chatClient = client.GetChatClient(ModelCatalog.ToModelName(model)).AsIChatClient();
      
         var allTools = getAllFunctions();                     
-        allTools.AddRange(mcpTools.Cast<AITool>());           
-
+        allTools.AddRange(mcpTools.Cast<AITool>()); 
 
         var agentOptions = new ChatClientAgentOptions
         {
             ChatOptions = new ChatOptions
             {
-                ToolMode = ChatToolMode.Auto,
-                Tools = allTools,
+                // The current model (Gemma 3.1b) does not support function calling, so we cannot use MCP tools in this example. You can uncomment this line when using a model that supports function calling.        
+                //ToolMode = ChatToolMode.Auto,
+                //Tools = allTools,
                 Reasoning = new ReasoningOptions
                 {
                     Effort = ReasoningEffort.ExtraHigh

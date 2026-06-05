@@ -94,7 +94,7 @@ public class Local
         {
             AgentResponse response = await agent.RunAsync(userInput, session);
 
-            Console.WriteLine(response.FinishReason);
+            //Console.WriteLine(response.FinishReason);
 
             Console.WriteLine(response.Text);
         }        

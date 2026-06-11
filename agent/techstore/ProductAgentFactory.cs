@@ -4,6 +4,7 @@ using Microsoft.Agents.AI;
 using Microsoft.Extensions.AI;
 using OpenAI;
 using System.ClientModel;
+using System.ClientModel.Primitives;
 
 
 namespace agent.techstore
@@ -12,11 +13,15 @@ namespace agent.techstore
     {
         public static AIAgent Create(AiModel model)
         {
+
+            var handler = new CustomClientHttpHandler();
+            var httpClient = new HttpClient(handler);
             var client = new OpenAIClient(
             new ApiKeyCredential(AppConfig.ApiKey),
             new OpenAIClientOptions
             {
-                Endpoint = new Uri(AppConfig.Endpoint)
+                Endpoint = new Uri(AppConfig.Endpoint),
+                Transport = new HttpClientPipelineTransport(httpClient)
             });
 
             var chatClient = client

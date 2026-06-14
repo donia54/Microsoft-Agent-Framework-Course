@@ -1,6 +1,10 @@
-﻿using Microsoft.Agents.AI;
+﻿using agent.techstore.RAG;
+using Microsoft.Agents.AI;
+using Microsoft.Extensions.AI;
+using Microsoft.SemanticKernel.Connectors.SqliteVec;
 using OpenAI;
 using System;
+using System.ClientModel;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -12,35 +16,56 @@ namespace agent.techstore
     {
         public static async Task RunStreamingAsync(AiModel model, OpenAIClient client)
         {
-            var agent =  ProductAgentFactory.Create(model);
-            var session = await agent.CreateSessionAsync();
 
+            // Embedding
+            var embeddingGenerator =
+                client.GetEmbeddingClient("text-embedding-3-small")
+                      .AsIEmbeddingGenerator();
+
+            // Chat model (GPT)
+            var chatClient =
+                client.GetChatClient("gpt-4.1-nano")
+                      .AsIChatClient();
+
+            // Vector store
+            string dbPath = $"Data Source={Path.GetTempPath()}\\techstore.db";
+
+            var vectorStore =
+                new SqliteVectorStore(dbPath,
+                new SqliteVectorStoreOptions
+                {
+                    EmbeddingGenerator = embeddingGenerator
+                });
+
+            // Services
+            var storeService = new VectorStoreService(vectorStore);
+            var ingest = new RAGIngestionService(storeService);
+
+            // 🔥 RAG SERVICE
+            var rag = new RAGService(storeService, chatClient);
+
+            // init
+            await storeService.ResetAsync();
+            await ingest.IngestAsync();
 
 
 
             while (true)
             {
-                Console.Write("User: ");
-                var input = Console.ReadLine();
+                Console.Write("\nAsk: ");
+                string question = Console.ReadLine();
 
-                if (string.IsNullOrWhiteSpace(input))
+                if (string.IsNullOrWhiteSpace(question))
                     continue;
 
-                Console.Write("Agent: ");
+                Console.WriteLine("\n🤖 Thinking...\n");
 
-                AgentResponse <ChatResponse> response = await agent.RunAsync<ChatResponse>(input, session);
+                string answer = await rag.AskAsync(question);
 
-                var result = response.Result;
-                Console.WriteLine("\n--- RESPONSE ---");
-                Console.WriteLine(response.Result.Answer);
-
-                Console.WriteLine("\nSources:");
-                response.Result.Sources.ForEach(Console.WriteLine);
-
-                Console.WriteLine($"\nIntent: {response.Result.Intent}");
-                Console.WriteLine();
-
-
+                Console.WriteLine("\n====================");
+                Console.WriteLine("FINAL ANSWER:");
+                Console.WriteLine("====================");
+                Console.WriteLine(answer);
             }
         }
     }

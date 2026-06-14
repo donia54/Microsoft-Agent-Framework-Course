@@ -1,7 +1,9 @@
 ﻿using agent.Logging;
+using agent.techstore.RAG;
 using agent.Tools;
 using Microsoft.Agents.AI;
 using Microsoft.Extensions.AI;
+using Microsoft.SemanticKernel.Connectors.SqliteVec;
 using OpenAI;
 using System.ClientModel;
 using System.ClientModel.Primitives;
@@ -11,7 +13,7 @@ namespace agent.techstore
 {
     public static class ProductAgentFactory
     {
-        public static AIAgent Create(AiModel model)
+        public  static AIAgent Create(AiModel model)
         {
 
             var handler = new CustomClientHttpHandler();
@@ -28,9 +30,36 @@ namespace agent.techstore
                 .GetChatClient(ModelCatalog.ToModelName(model))
                 .AsIChatClient();
 
+
+            var embeddingGenerator =
+                client.GetEmbeddingClient("text-embedding-3-small")
+                      .AsIEmbeddingGenerator();
+
+            string dbPath = $"Data Source={Path.GetTempPath()}\\techstore.db";
+
+            var vectorStore =
+                new SqliteVectorStore(dbPath,
+                new SqliteVectorStoreOptions
+                {
+                    EmbeddingGenerator = embeddingGenerator
+                });
+
+            // Services
+            var storeService = new VectorStoreService(vectorStore);
+             storeService.EnsureAsync();
+
+            var ingest = new RAGIngestionService(storeService);
+
+            // أول مرة بس
+             storeService.ResetAsync();
+             ingest.IngestAsync();
+
+
+
             var allTools = new List<AITool>();
 
-            allTools.AddRange(ToolRegistry.GetAll());
+            allTools.AddRange(ToolRegistry.GetAll(storeService));
+
 
             // Main Agent
             var options = new ChatClientAgentOptions
@@ -42,21 +71,27 @@ namespace agent.techstore
                     Tools = allTools,
                     Instructions =
 """
-You are a website chatbot.
+You are a website assistant.
+ALWAYS use RAG tool first before other tools.
+If query is about products, search RAG first.
+Only use raw tools if RAG returns nothing.
 
-You MUST:
-- Always use tools before answering
-- Never hallucinate data
-- Only use website content
-- Return structured JSON response
+Available tools:
 
-If user asks:
-- products → use GetProducts
-- pages → use GetPages
-- general → combine tools
+SearchWebsite(query)
+GetProducts()
+
+Rules:
+- Never invent products.
+- Always call a tool first.
+- Answer only from returned data.
+- Include source urls.
 """
                 }
             };
+
+          
+
 
             var agent = chatClient
                 .AsAIAgent(options)

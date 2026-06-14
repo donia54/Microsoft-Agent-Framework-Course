@@ -1,4 +1,5 @@
-﻿using agent.Tools;
+﻿using agent.techstore.RAG;
+using agent.Tools;
 using Microsoft.Extensions.AI;
 using System;
 using System.Collections.Generic;
@@ -10,12 +11,15 @@ namespace agent.techstore
 {
     public static class ToolRegistry
     {
-        public static List<AITool> GetAll()
+        public static List<AITool> GetAll(VectorStoreService store)
         {
-            return new()
+            var ragTool = new RAGTool(store);
+
+            return new List<AITool>
         {
-            AIFunctionFactory.Create(WebsiteTools.GetPages),
-            AIFunctionFactory.Create(WebsiteTools.GetProducts)
+             AIFunctionFactory.Create(WebsiteTools.SearchWebsite),
+            AIFunctionFactory.Create(WebsiteTools.GetProducts),
+            AIFunctionFactory.Create(ragTool.Search) 
         };
         }
     }

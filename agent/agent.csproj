@@ -13,6 +13,8 @@
     <PackageReference Include="Microsoft.Agents.AI" Version="1.6.1" />
     <PackageReference Include="Microsoft.Extensions.AI" Version="10.6.0" />
     <PackageReference Include="Microsoft.Extensions.AI.OpenAI" Version="10.6.0" />
+    <PackageReference Include="Microsoft.SemanticKernel" Version="1.77.0" />
+    <PackageReference Include="Microsoft.SemanticKernel.Connectors.SqliteVec" Version="1.74.0-preview" />
     <PackageReference Include="ModelContextProtocol" Version="1.3.0" />
     <PackageReference Include="OpenAI" Version="2.10.0" />
     <PackageReference Include="System.ClientModel" Version="1.14.0" />

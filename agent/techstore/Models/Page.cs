@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace agent.techstore
+namespace agent.techstore.Models
 {
 
     public class Page

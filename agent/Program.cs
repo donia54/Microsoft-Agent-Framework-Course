@@ -5,6 +5,7 @@ using agent;
 using OpenAI;
 using System.ClientModel;
 using agent.techstore;
+using agent.techstore.RAG;
 
 
 
@@ -19,6 +20,8 @@ var client = new OpenAIClient(
 //await Runner.RunStreamingAsync(AiModel.GPT5Mini,client);
 
 await techstoreRunner.RunStreamingAsync(AiModel.GPT5Mini, client);
+
+//await RAGTesting.RunSample();
 
 
 
